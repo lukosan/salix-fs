@@ -8,4 +8,4 @@ springBoot {
 	mainClass = 'org.lukosan.salix.Application'
 }
 
-bintray.pkg.version.desc = 'Salix Amazon S3 module'
+bintray.pkg.version.desc = 'Salix File-system module'
