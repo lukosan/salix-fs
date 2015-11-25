@@ -1,0 +1,11 @@
+dependencies {
+	compile project(':salix-core')
+	
+	compile 'commons-io:commons-io:2.4'
+}
+
+springBoot {
+	mainClass = 'org.lukosan.salix.Application'
+}
+
+bintray.pkg.version.desc = 'Salix Amazon S3 module'
