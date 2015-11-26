@@ -33,7 +33,7 @@ public class NixFsClient implements FsClient {
 			FileOutputStream out = new FileOutputStream(path);
 			IOUtils.copy(in, out);
 		} catch (IOException e) {
-			logger.error(e);
+			logger.error("Error writing " + path, e);
 		}
 	}
 
@@ -43,7 +43,7 @@ public class NixFsClient implements FsClient {
 		try {
 			return new FileInputStream(path);
 		} catch (FileNotFoundException e) {
-			logger.error(e);
+			logger.error("Error reading " + path, e);
 		}
 		return null;
 	}

@@ -71,5 +71,5 @@ public class FsSalixResource implements SalixResource {
 	@Override
 	public boolean exists() {
 		return client.getInputStream(scope, "resources", sourceId) != null;
-	}	
+	}
 }

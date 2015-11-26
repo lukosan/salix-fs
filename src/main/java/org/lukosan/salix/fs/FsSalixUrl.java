@@ -15,19 +15,24 @@ public class FsSalixUrl implements SalixUrl {
 	private String scope;
 	private String url;
 	private String view;
+	private int status = 200;
 	private Map<String, Object> map = new HashMap<String, Object>();
 	
 	public FsSalixUrl() {
 		super();
 	}
-	public FsSalixUrl(String scope, String url, String view, Map<String, Object> map) {
+	public FsSalixUrl(String scope, String url, int status, String view, Map<String, Object> map) {
 		this();
 		setScope(scope);
 		setUrl(url);
 		setView(view);
 		setMap(map);
+		setStatus(status);
 	}
 	
+	public void setStatus(int status) {
+		this.status = status;
+	}
 	public String getScope() {
 		return scope;
 	}
@@ -60,8 +65,7 @@ public class FsSalixUrl implements SalixUrl {
 	public LocalDateTime getRemoved() {
 		return null;
 	}
-	@JsonIgnore
 	public int getStatus() {
-		return 200;
+		return status > 0 ? status : 200;
 	}
 }

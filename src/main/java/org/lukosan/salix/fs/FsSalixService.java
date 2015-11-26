@@ -129,7 +129,7 @@ public class FsSalixService implements SalixService {
 
 	@Override
 	public SalixUrl save(String scope, String url, int status, String view, LocalDateTime published, LocalDateTime removed, Map<String, Object> map) {
-		FsSalixUrl s3url = new FsSalixUrl(scope, url, view, map);
+		FsSalixUrl s3url = new FsSalixUrl(scope, url, status, view, map);
 		return save(s3url);
 	}
 
@@ -178,7 +178,7 @@ public class FsSalixService implements SalixService {
 	@Override
 	public SalixResource save(String scope, String sourceId, String sourceUri, Map<String, Object> map) {
 		InputStream in = new ByteArrayInputStream(MapUtils.asString(map).getBytes(StandardCharsets.UTF_8));
-		client.putInputStream(in, scope, "templates", sourceId);
+		client.putInputStream(in, scope, "resources", sourceId);
 		return new FsSalixResource(scope, sourceId, client);
 	}
 
