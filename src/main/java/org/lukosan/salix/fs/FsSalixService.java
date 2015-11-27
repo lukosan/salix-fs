@@ -170,8 +170,9 @@ public class FsSalixService implements SalixService {
 	public SalixTemplate template(String name) {
 		if(StringUtils.isEmpty(name))
 			return null;
-		InputStream stream = client.getInputStream("templates", name);
+		InputStream stream = null;
 		try {
+			stream = client.getInputStream("templates", name);
 			return mapper.readValue(stream, FsSalixTemplate.class);
 		} catch (Exception e) {
 			logger.error(e);
@@ -185,8 +186,9 @@ public class FsSalixService implements SalixService {
 	public SalixTemplate template(String name, String scope) {
 		if(StringUtils.isEmpty(name))
 			return null;
-		InputStream stream = client.getInputStream(scope, "templates", name);
+		InputStream stream = null;
 		try {
+			stream = client.getInputStream(scope, "templates", name);
 			return new FsSalixTemplate(scope, name, IOUtils.toString(stream));
 		} catch (Exception e) {
 			logger.error(e);
