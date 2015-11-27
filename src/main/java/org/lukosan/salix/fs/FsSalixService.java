@@ -72,11 +72,24 @@ public class FsSalixService implements SalixService {
 	public SalixConfiguration configuration(String scope, String target) {
 		if(StringUtils.isEmpty(target))
 			return null;
+		InputStream stream = client.getInputStream(scope, "configurations", target);
 		try {
-			return mapper.readValue(client.getInputStream(scope, "configurations", target), FsSalixConfiguration.class);
+			return mapper.readValue(stream, FsSalixConfiguration.class);
 		} catch (Exception e) {
 			logger.error(e);
 			return null;
+		} finally {
+			close(stream);
+		}
+	}
+
+	private void close(InputStream stream) {
+		if(null == stream)
+			return;
+		try {
+			stream.close();
+		} catch (IOException e) {
+			logger.error(e);
 		}
 	}
 
@@ -114,11 +127,14 @@ public class FsSalixService implements SalixService {
 	public SalixUrl url(String url, String scope) {
 		if(StringUtils.isEmpty(url))
 			return null;
+		InputStream stream = client.getInputStream(scope, "urls", url.replace('/', '_'));
 		try {
-			return mapper.readValue(client.getInputStream(scope, "urls", url.replace('/', '_')), FsSalixUrl.class);
+			return mapper.readValue(stream, FsSalixUrl.class);
 		} catch (Exception e) {
 			logger.error(e);
 			return null;
+		} finally {
+			close(stream);
 		}
 	}
 
@@ -154,11 +170,14 @@ public class FsSalixService implements SalixService {
 	public SalixTemplate template(String name) {
 		if(StringUtils.isEmpty(name))
 			return null;
+		InputStream stream = client.getInputStream("templates", name);
 		try {
-			return mapper.readValue(client.getInputStream("templates", name), FsSalixTemplate.class);
+			return mapper.readValue(stream, FsSalixTemplate.class);
 		} catch (Exception e) {
 			logger.error(e);
 			return null;
+		} finally {
+			close(stream);
 		}
 	}
 
@@ -166,11 +185,14 @@ public class FsSalixService implements SalixService {
 	public SalixTemplate template(String name, String scope) {
 		if(StringUtils.isEmpty(name))
 			return null;
+		InputStream stream = client.getInputStream(scope, "templates", name);
 		try {
-			return new FsSalixTemplate(scope, name, IOUtils.toString(client.getInputStream(scope, "templates", name)));
+			return new FsSalixTemplate(scope, name, IOUtils.toString(stream));
 		} catch (Exception e) {
 			logger.error(e);
 			return null;
+		} finally {
+			close(stream);
 		}
 	}
 

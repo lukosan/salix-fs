@@ -59,4 +59,10 @@ public class NixFsClient implements FsClient {
 		String path = rootPath + delimiter + StringUtils.arrayToDelimitedString(paths, delimiter);
 		return Arrays.asList(new File(path).list(FileFileFilter.FILE));
 	}
+
+	@Override
+	public boolean exists(String... paths) {
+		String path = rootPath + delimiter + StringUtils.arrayToDelimitedString(paths, delimiter);
+		return new File(path).exists();
+	}
 }

@@ -1,6 +1,7 @@
 package org.lukosan.salix.fs;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.lukosan.salix.ResourceWriter;
@@ -65,11 +66,16 @@ public class FsSalixResource implements SalixResource {
 
 	@Override
 	public void writeTo(ResourceWriter writer) throws IOException {
-		IOUtils.copy(client.getInputStream(scope, "resources", sourceId), writer.getOutputStream());
+		InputStream stream = client.getInputStream(scope, "resources", sourceId);
+		try {
+			IOUtils.copy(stream, writer.getOutputStream());
+		} finally {
+			stream.close();
+		}
 	}
 
 	@Override
-	public boolean exists() {
-		return client.getInputStream(scope, "resources", sourceId) != null;
+	public boolean exists() {		
+		return client.exists(scope, "resources", sourceId);
 	}
 }

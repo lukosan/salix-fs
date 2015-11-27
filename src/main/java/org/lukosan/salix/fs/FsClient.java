@@ -12,4 +12,6 @@ public interface FsClient {
 	List<String> listFoldersInFolder(String... paths);
 
 	List<String> listFilesInFolder(String... paths);
+
+	boolean exists(String... paths);
 }
