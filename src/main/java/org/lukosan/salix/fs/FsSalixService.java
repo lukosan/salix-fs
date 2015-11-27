@@ -83,9 +83,18 @@ public class FsSalixService implements SalixService {
 	@Override
 	public SalixConfiguration save(String scope, String target, Map<String, Object> map) {
 		try {
+			FsSalixConfiguration configuration = new FsSalixConfiguration(scope, target, map);
 			PipedOutputStream out = new PipedOutputStream();
 			PipedInputStream in = new PipedInputStream(out);
-			FsSalixConfiguration configuration = new FsSalixConfiguration(scope, target, map);
+			new Thread(new Runnable() {
+				    public void run(){
+				    	try {
+							mapper.writeValue(out, configuration);
+						} catch (IOException e) {
+							logger.error(e);
+						}
+				    }
+				}).start();
 			mapper.writeValue(out, configuration);
 			client.putInputStream(in, scope, "configurations", target);
 			return configuration;
@@ -118,7 +127,15 @@ public class FsSalixService implements SalixService {
 		try {
 			PipedOutputStream out = new PipedOutputStream();
 			PipedInputStream in = new PipedInputStream(out);
-			mapper.writeValue(out, salixUrl);
+			new Thread(new Runnable() {
+				    public void run(){
+				    	try {
+							mapper.writeValue(out, salixUrl);
+						} catch (IOException e) {
+							logger.error(e);
+						}
+				    }
+				}).start();
 			client.putInputStream(in, salixUrl.getScope(), "urls", salixUrl.getUrl().replace('/',  '_'));
 			return salixUrl;
 		} catch (IOException e) {
