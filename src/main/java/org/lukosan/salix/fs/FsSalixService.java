@@ -32,7 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * This relies on convention over configuration:
  * 
  * Given a path, e.g. "/home/username/salix-files", it assumes there is a folder structure for each "scope" as:
- * /home/username/salix-files/scopename/urls/            <-- url go in here, serialized using json, / in filenames are replaced with _
+ * /home/username/salix-files/scopename/urls/            <-- urls go in here, serialized using json, / in filenames are replaced with _
  * /home/username/salix-files/scopename/templates/       <-- templates go in here, stored as text
  * /home/username/salix-files/scopename/configurations/  <-- configurations go in here, serialized using json
  * /home/username/salix-files/scopename/resources/       <-- resources go in here, uploaded as whatever files you like and the resourceType

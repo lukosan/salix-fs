@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
@@ -51,13 +52,17 @@ public class NixFsClient implements FsClient {
 	@Override
 	public List<String> listFoldersInFolder(String... paths) {
 		String path = rootPath + delimiter + StringUtils.arrayToDelimitedString(paths, delimiter);
-		return Arrays.asList(new File(path).list(DirectoryFileFilter.DIRECTORY));
+		if(new File(path).exists())
+			return Arrays.asList(new File(path).list(DirectoryFileFilter.DIRECTORY));
+		return Collections.emptyList();
 	}
 
 	@Override
 	public List<String> listFilesInFolder(String... paths) {
 		String path = rootPath + delimiter + StringUtils.arrayToDelimitedString(paths, delimiter);
-		return Arrays.asList(new File(path).list(FileFileFilter.FILE));
+		if(new File(path).exists())
+			return Arrays.asList(new File(path).list(FileFileFilter.FILE));
+		return Collections.emptyList();
 	}
 
 	@Override
