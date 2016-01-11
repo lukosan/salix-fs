@@ -74,7 +74,7 @@ public class FsSalixService implements SalixService {
 			return null;
 		InputStream stream = client.getInputStream(scope, "configurations", target);
 		try {
-			return mapper.readValue(stream, FsSalixConfiguration.class);
+			return stream == null ? null : mapper.readValue(stream, FsSalixConfiguration.class);
 		} catch (Exception e) {
 			logger.error(e);
 			return null;
@@ -129,9 +129,9 @@ public class FsSalixService implements SalixService {
 			return null;
 		InputStream stream = client.getInputStream(scope, "urls", url.replace('/', '_'));
 		try {
-			return mapper.readValue(stream, FsSalixUrl.class);
+			return stream == null ? null : mapper.readValue(stream, FsSalixUrl.class);
 		} catch (Exception e) {
-			logger.error(e);
+			logger.error("Problem reading SalixUrl", e);
 			return null;
 		} finally {
 			close(stream);
@@ -173,7 +173,7 @@ public class FsSalixService implements SalixService {
 		InputStream stream = null;
 		try {
 			stream = client.getInputStream("templates", name);
-			return mapper.readValue(stream, FsSalixTemplate.class);
+			return stream == null ? null : mapper.readValue(stream, FsSalixTemplate.class);
 		} catch (Exception e) {
 			logger.error(e);
 			return null;
@@ -189,7 +189,7 @@ public class FsSalixService implements SalixService {
 		InputStream stream = null;
 		try {
 			stream = client.getInputStream(scope, "templates", name);
-			return new FsSalixTemplate(scope, name, IOUtils.toString(stream));
+			return stream == null ? null : new FsSalixTemplate(scope, name, IOUtils.toString(stream));
 		} catch (Exception e) {
 			logger.error(e);
 			return null;
