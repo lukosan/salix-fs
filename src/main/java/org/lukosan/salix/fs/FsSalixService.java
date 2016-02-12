@@ -24,23 +24,46 @@ import org.lukosan.salix.SalixService;
 import org.lukosan.salix.SalixTemplate;
 import org.lukosan.salix.SalixUrl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+import org.yaml.snakeyaml.Yaml;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * This relies on convention over configuration:
+ * The suggested layout is:
  * 
- * Given a path, e.g. "/home/username/salix-files", it assumes there is a folder structure for each "scope" as:
- * /home/username/salix-files/scopename/urls/            <-- urls go in here, serialized using json, / in filenames are replaced with _
- * /home/username/salix-files/scopename/templates/       <-- templates go in here, stored as text
- * /home/username/salix-files/scopename/configurations/  <-- configurations go in here, serialized using json
- * /home/username/salix-files/scopename/resources/       <-- resources go in here, uploaded as whatever files you like and the resourceType
+ * Given a path, e.g. "/home/username/salix-files", there exists a folder structure for each "scope" as:
+ * /home/username/salix-files/scopename/urls/            -- urls go in here, serialized using yaml or json, "index" denotes a folder's url
+ * /home/username/salix-files/scopename/templates/       -- templates go in here, stored as text but using whatever template format you like
+ * /home/username/salix-files/scopename/configuration/   -- configurations go in here, serialized using json
+ * /home/username/salix-files/scopename/resource/        -- resources go in here, uploaded as whatever files you like and the resourceType
  *                                                           and contentType are guessed from each file's extension
  */
 public class FsSalixService implements SalixService {
 
 	private static final Log logger = LogFactory.getLog(FsSalixService.class);
+	
+	@Value("${salix.fs.url.path:urls}")
+	private String urlPath;
+	@Value("${salix.fs.url.suffix:.yml}")
+	private String urlSuffix;
+	
+	@Value("${salix.fs.template.path:templates}")
+	private String templatePath;
+	@Value("${salix.fs.template.suffix:.html}")
+	private String templateSuffix;
+	
+	@Value("${salix.fs.resource.path:resources}")
+	private String resourcePath;
+	@Value("${salix.fs.resource.suffix:}")
+	private String resourceSuffix;
+	
+	@Value("${salix.fs.configuration.path:configurations}")
+	private String configurationPath;
+	@Value("${salix.fs.configuration.suffix:.json}")
+	private String configurationSuffix;
 	
 	@Autowired
 	private FsClient client;
@@ -60,9 +83,9 @@ public class FsSalixService implements SalixService {
 	public List<SalixConfiguration> configurationsFor(String target) {
 		List<SalixConfiguration> configs = new ArrayList<SalixConfiguration>();
 		for(String scope : scopes()) {
-			for(String key : client.listFilesInFolder(scope, "configurations")) {
-				if(key.equalsIgnoreCase(target))
-					configs.add(configuration(scope, key));
+			for(String key : client.listFilesInFolder(scope, configurationPath)) {
+				if(target.equalsIgnoreCase(strip(key, configurationSuffix)) && matches(key, configurationSuffix, templatePath, urlPath))
+					configs.add(configuration(scope, strip(key, configurationSuffix)));
 			}
 		}
 		return configs.stream().filter(c -> null != c).collect(Collectors.toList());
@@ -72,7 +95,7 @@ public class FsSalixService implements SalixService {
 	public SalixConfiguration configuration(String scope, String target) {
 		if(StringUtils.isEmpty(target))
 			return null;
-		InputStream stream = client.getInputStream(scope, "configurations", target);
+		InputStream stream = client.getInputStream(scope, configurationPath, target + configurationSuffix);
 		try {
 			return stream == null ? null : mapper.readValue(stream, FsSalixConfiguration.class);
 		} catch (Exception e) {
@@ -108,8 +131,7 @@ public class FsSalixService implements SalixService {
 						}
 				    }
 				}).start();
-			mapper.writeValue(out, configuration);
-			client.putInputStream(in, scope, "configurations", target);
+			client.putInputStream(in, scope, configurationPath, target + configurationSuffix);
 			return configuration;
 		} catch (IOException e) {
 			logger.error(e);
@@ -125,11 +147,14 @@ public class FsSalixService implements SalixService {
 
 	@Override
 	public SalixUrl url(String url, String scope) {
+		url = toFsUrl(url);
 		if(StringUtils.isEmpty(url))
 			return null;
-		InputStream stream = client.getInputStream(scope, "urls", url.replace('/', '_'));
+		InputStream stream = client.getInputStream(scope, urlPath, url + urlSuffix);
 		try {
-			return stream == null ? null : mapper.readValue(stream, FsSalixUrl.class);
+			if(urlSuffix.endsWith("json"))
+				return stream == null ? null : mapper.readValue(stream, FsSalixUrl.class);
+			return new Yaml().loadAs(stream, FsSalixUrl.class);
 		} catch (Exception e) {
 			logger.error("Problem reading SalixUrl", e);
 			return null;
@@ -152,12 +177,18 @@ public class FsSalixService implements SalixService {
 						}
 				    }
 				}).start();
-			client.putInputStream(in, salixUrl.getScope(), "urls", salixUrl.getUrl().replace('/',  '_'));
+			client.putInputStream(in, salixUrl.getScope(), urlPath, toFsUrl(salixUrl.getUrl()) + urlSuffix);
 			return salixUrl;
 		} catch (IOException e) {
 			logger.error(e);
 			return salixUrl;
 		}
+	}
+	
+	private String toFsUrl(String url) {
+		if(url.length() == 0) url += "/";
+		if(url.endsWith("/")) url += "index";
+		return url;
 	}
 
 	@Override
@@ -172,7 +203,7 @@ public class FsSalixService implements SalixService {
 			return null;
 		InputStream stream = null;
 		try {
-			stream = client.getInputStream("templates", name);
+			stream = client.getInputStream(templatePath, name + templateSuffix);
 			return stream == null ? null : mapper.readValue(stream, FsSalixTemplate.class);
 		} catch (Exception e) {
 			logger.error(e);
@@ -188,7 +219,7 @@ public class FsSalixService implements SalixService {
 			return null;
 		InputStream stream = null;
 		try {
-			stream = client.getInputStream(scope, "templates", name);
+			stream = client.getInputStream(scope, templatePath, name + templateSuffix);
 			return stream == null ? null : new FsSalixTemplate(scope, name, IOUtils.toString(stream));
 		} catch (Exception e) {
 			logger.error(e);
@@ -203,7 +234,7 @@ public class FsSalixService implements SalixService {
 		try {
 			FsSalixTemplate template = new FsSalixTemplate(scope, name, source);
 			InputStream in = new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8));
-			client.putInputStream(in, scope, "templates", name);
+			client.putInputStream(in, scope, templatePath, name + templateSuffix);
 			return template;
 		} catch (Exception e) {
 			logger.error(e);
@@ -213,14 +244,14 @@ public class FsSalixService implements SalixService {
 
 	@Override
 	public SalixResource resource(String sourceId, String scope) {
-		return new FsSalixResource(scope, sourceId, client);
+		return new FsSalixResource(scope, resourcePath, sourceId + resourceSuffix, client);
 	}
 
 	@Override
 	public SalixResource save(String scope, String sourceId, String sourceUri, Map<String, Object> map) {
 		InputStream in = new ByteArrayInputStream(MapUtils.asString(map).getBytes(StandardCharsets.UTF_8));
-		client.putInputStream(in, scope, "resources", sourceId);
-		return new FsSalixResource(scope, sourceId, client);
+		client.putInputStream(in, scope, resourcePath, sourceId + resourceSuffix);
+		return new FsSalixResource(scope, resourcePath, sourceId + resourceSuffix, client);
 	}
 
 	@Override
@@ -238,8 +269,9 @@ public class FsSalixService implements SalixService {
 	@Override
 	public List<SalixTemplate> templatesIn(String scope) {
 		List<SalixTemplate> templates = new ArrayList<SalixTemplate>();
-		for(String key : client.listFilesInFolder(scope, "templates")) {
-			templates.add(template(key, scope));
+		for(String key : client.listFilesInFolder(scope, templatePath)) {
+			if(matches(key, templateSuffix, configurationPath, resourcePath))
+				templates.add(template(strip(key, templateSuffix), scope));
 		}
 		return templates.stream().filter(c -> null != c).collect(Collectors.toList());
 	}
@@ -247,8 +279,9 @@ public class FsSalixService implements SalixService {
 	@Override
 	public List<SalixResource> resourcesIn(String scope) {
 		List<SalixResource> resources = new ArrayList<SalixResource>();
-		for(String key : client.listFilesInFolder(scope, "resources")) {
-			resources.add(resource(key, scope));
+		for(String key : client.listFilesInFolder(scope, resourcePath)) {
+			if(matches(key, resourceSuffix, templatePath, urlPath))
+				resources.add(resource(strip(key, resourceSuffix), scope));
 		}
 		return resources.stream().filter(c -> null != c).collect(Collectors.toList());
 	}
@@ -256,8 +289,9 @@ public class FsSalixService implements SalixService {
 	@Override
 	public List<SalixUrl> urlsIn(String scope) {
 		List<SalixUrl> urls = new ArrayList<SalixUrl>();
-		for(String key : client.listFilesInFolder(scope, "urls")) {
-			urls.add(url(key.replace('_', '/'), scope));
+		for(String key : client.listFilesInSubFolders(scope, urlPath)) {
+			if(matches(key, urlSuffix, configurationPath, resourcePath))
+				urls.add(url(strip(key, urlSuffix), scope));
 		}
 		return urls.stream().filter(c -> null != c).collect(Collectors.toList());
 	}
@@ -265,10 +299,41 @@ public class FsSalixService implements SalixService {
 	@Override
 	public List<SalixConfiguration> configurationsIn(String scope) {
 		List<SalixConfiguration> configs = new ArrayList<SalixConfiguration>();
-		for(String key : client.listFilesInFolder(scope, "configurations")) {
-			configs.add(configuration(scope, key));
+		for(String key : client.listFilesInFolder(scope, configurationPath)) {
+			if(matches(key, configurationSuffix, urlPath, resourcePath, templatePath))
+				configs.add(configuration(scope, strip(key, configurationSuffix)));
 		}
 		return configs.stream().filter(c -> null != c).collect(Collectors.toList());
+	}
+
+	private String strip(String key, String suffix) {
+		return key.substring(0, key.length() - suffix.length());
+	}
+
+	private boolean matches(String key, String suffix, String... exclusions) {
+		for(String exclusion : exclusions)
+			if(StringUtils.hasText(exclusion) && key.startsWith(exclusion))
+				return true;
+		return (StringUtils.hasText(suffix) ? key.endsWith(suffix) : true);
+	}
+	
+	public static String arrayToDelimitedString(String[] arr, String delim) {
+		if (ObjectUtils.isEmpty(arr)) {
+			return "";
+		}
+		if (arr.length == 1) {
+			return ObjectUtils.nullSafeToString(arr[0]);
+		}
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < arr.length; i++) {
+			if(StringUtils.hasText(arr[i])) {
+				if (sb.length() > 0) {
+					sb.append(delim);
+				}
+				sb.append(arr[i]);
+			}
+		}
+		return sb.toString();
 	}
 
 }

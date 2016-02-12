@@ -6,9 +6,13 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
@@ -29,7 +33,7 @@ public class NixFsClient implements FsClient {
 	
 	@Override
 	public void putInputStream(InputStream in, String... paths) {
-		String path = rootPath + delimiter + StringUtils.arrayToDelimitedString(paths, delimiter);
+		String path = rootPath + delimiter + FsSalixService.arrayToDelimitedString(paths, delimiter);
 		try {
 			FileOutputStream out = new FileOutputStream(path);
 			IOUtils.copy(in, out);
@@ -40,7 +44,7 @@ public class NixFsClient implements FsClient {
 
 	@Override
 	public InputStream getInputStream(String... paths) {
-		String path = rootPath + delimiter + StringUtils.arrayToDelimitedString(paths, delimiter);
+		String path = rootPath + delimiter + FsSalixService.arrayToDelimitedString(paths, delimiter);
 		try {
 			return new FileInputStream(path);
 		} catch (FileNotFoundException e) {
@@ -51,7 +55,7 @@ public class NixFsClient implements FsClient {
 
 	@Override
 	public List<String> listFoldersInFolder(String... paths) {
-		String path = rootPath + delimiter + StringUtils.arrayToDelimitedString(paths, delimiter);
+		String path = rootPath + delimiter + FsSalixService.arrayToDelimitedString(paths, delimiter);
 		if(new File(path).exists())
 			return Arrays.asList(new File(path).list(DirectoryFileFilter.DIRECTORY));
 		return Collections.emptyList();
@@ -59,7 +63,7 @@ public class NixFsClient implements FsClient {
 
 	@Override
 	public List<String> listFilesInFolder(String... paths) {
-		String path = rootPath + delimiter + StringUtils.arrayToDelimitedString(paths, delimiter);
+		String path = rootPath + delimiter + FsSalixService.arrayToDelimitedString(paths, delimiter);
 		if(new File(path).exists())
 			return Arrays.asList(new File(path).list(FileFileFilter.FILE));
 		return Collections.emptyList();
@@ -67,7 +71,19 @@ public class NixFsClient implements FsClient {
 
 	@Override
 	public boolean exists(String... paths) {
-		String path = rootPath + delimiter + StringUtils.arrayToDelimitedString(paths, delimiter);
+		String path = rootPath + delimiter + FsSalixService.arrayToDelimitedString(paths, delimiter);
 		return new File(path).exists();
+	}
+
+	@Override
+	public List<String> listFilesInSubFolders(String... paths) {
+		String fsPath = rootPath + delimiter + FsSalixService.arrayToDelimitedString(paths, delimiter);
+		Path path = Paths.get(fsPath);
+		try {
+			return Files.walk(path).filter(Files::isRegularFile).map(t -> "/" + t.toString().substring(fsPath.length())).collect(Collectors.toList());
+		} catch (IOException e) {
+			logger.info("Error listing files in subfolder " + path);
+		}
+		return Collections.emptyList();
 	}
 }

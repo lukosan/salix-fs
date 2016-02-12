@@ -14,17 +14,19 @@ public class FsSalixResource implements SalixResource {
 
 	private String scope;
 	private String sourceId;
+	private String path;
 	private FsClient client;
 
 	public FsSalixResource() {
 		super();
 	}
 	
-	public FsSalixResource(String scope, String sourceId, FsClient client) {
+	public FsSalixResource(String scope, String path, String sourceId, FsClient client) {
 		this();
 		this.scope = scope;
 		this.sourceId = sourceId;
 		this.client = client;
+		this.path = path;
 	}
 	
 	public String getScope() {
@@ -66,7 +68,7 @@ public class FsSalixResource implements SalixResource {
 
 	@Override
 	public void writeTo(ResourceWriter writer) throws IOException {
-		InputStream stream = client.getInputStream(scope, "resources", sourceId);
+		InputStream stream = client.getInputStream(scope, path, sourceId);
 		try {
 			IOUtils.copy(stream, writer.getOutputStream());
 		} finally {
@@ -76,6 +78,6 @@ public class FsSalixResource implements SalixResource {
 
 	@Override
 	public boolean exists() {		
-		return client.exists(scope, "resources", sourceId);
+		return client.exists(scope, path, sourceId);
 	}
 }
