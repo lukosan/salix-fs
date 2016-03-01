@@ -330,10 +330,18 @@ public class FsSalixService implements SalixService {
 				if (sb.length() > 0) {
 					sb.append(delim);
 				}
-				sb.append(arr[i]);
+				sb.append(trim(arr[i], delim));
 			}
 		}
 		return sb.toString();
+	}
+
+	private static String trim(String raw, String delim) {
+		if(raw.startsWith(delim))
+			raw = raw.substring(1);
+		if(raw.endsWith(delim))
+			raw = raw.substring(0, raw.length() - 1);
+		return raw;
 	}
 
 }

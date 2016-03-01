@@ -20,7 +20,6 @@ import org.apache.commons.io.filefilter.FileFileFilter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.util.StringUtils;
 
 public class NixFsClient implements FsClient {
 
